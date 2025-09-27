@@ -3,24 +3,36 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.so
 *.egg-info/
 *.egg
 env/
 venv/
+.venv/
+ENV/
 
 # Databases
 *.db
 *.db-journal
+*.sqlite3
 *.mdf
 *.ldf
 
 # Logs
 *.log
 
-# OS
+# Environment variables
+.env
+*.env
+
+# OS files
 Thumbs.db
 .DS_Store
 
-# VSCode
+# VSCode / IDEs
 .vscode/
+.idea/
+*.code-workspace
+
+# Render / Deployment
+*.tar.gz
+*.bak

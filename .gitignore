@@ -14,15 +14,20 @@ ENV/
 *.db
 *.db-journal
 *.sqlite3
+*.sqlite
 *.mdf
 *.ldf
 
 # Logs
 *.log
+logs/
+*.out
+*.err
 
-# Environment variables
+# Environment variables / secrets
 .env
 *.env
+.env.*
 
 # OS files
 Thumbs.db
@@ -33,6 +38,19 @@ Thumbs.db
 .idea/
 *.code-workspace
 
-# Render / Deployment
+# Render / Deployment / Packages
 *.tar.gz
 *.bak
+*.zip
+*.gz
+
+# Coverage / Testing
+.coverage
+htmlcov/
+.tox/
+pytest_cache/
+
+# Node / Frontend (لو فكرت تضيف واجهة React أو غيره لاحقاً)
+node_modules/
+dist/
+build/

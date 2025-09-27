@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head><meta charset="UTF-8"><title>لعبة انسان جماد</title></head>
+<body>
+  <h1>مرحباً بك في لعبة انسان جماد</h1>
+  <p>معرف اللعبة: <span id="game-id"></span></p>
+  <script>
+    const p = new URLSearchParams(window.location.search);
+    document.getElementById("game-id").textContent = p.get("id") || "(غير محدد)";
+  </script>
+</body>
+</html>

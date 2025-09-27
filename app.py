@@ -6,8 +6,9 @@ from pathlib import Path
 from flask import Flask, request, redirect, send_from_directory, abort
 
 # --- إعدادات ---
-DB_PATH = r"C:\Users\FAHAD\Downloads\RTS\database\Dash.db"
-PAGES_DIR = r"C:\Users\FAHAD\Downloads\RTS\templates"
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "database" / "Dash.db"
+PAGES_DIR = BASE_DIR / "templates"
 
 # --- Flask App ---
 app = Flask(__name__)
@@ -59,6 +60,7 @@ def play():
 
     return redirect(f"/games/{page_filename}?id={game_id}")
 
+# شغل محلي فقط
 if __name__ == "__main__":
     print("🚀 افتح المتصفح على: http://127.0.0.1:5000")
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)

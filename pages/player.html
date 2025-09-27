@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>🎮 صفحة اللاعب</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: #f0f0f0;
+      position: fixed;
+      touch-action: none;
+    }
+    
+    .app-container {
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    
+    /* الهيدر */
+    .header-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 10px 8px 8px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .game-title {
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    
+    .info-bar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 6px;
+    }
+    
+    .info-item {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .info-icon {
+      font-size: 14px;
+    }
+    
+    .info-text {
+      font-size: 10px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+    
+    .info-value {
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    /* المحتوى الرئيسي */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    /* قسم القصة */
+    .story-section {
+      background: white;
+      margin: 8px;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      max-height: 30vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .section-header {
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .story-content {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      border-right: 3px solid #667eea;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-y: auto;
+      flex: 1;
+      color: #333;
+    }
+    
+    .turn-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      animation: pulse 2s infinite;
+    }
+    
+    .waiting-turn {
+      background: #6c757d;
+      animation: none;
+    }
+    
+    /* قسم الاختيارات */
+    .choices-section {
+      background: white;
+      margin: 0 8px 8px 8px;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      flex-shrink: 0;
+      max-height: 25vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .choices-scroll {
+      overflow-y: auto;
+      overflow-x: hidden;
+      flex: 1;
+      padding-left: 2px;
+    }
+    
+    .choice-button {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: transform 0.1s;
+      touch-action: manipulation;
+    }
+    
+    .choice-button:active {
+      transform: scale(0.97);
+    }
+    
+    .choice-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .waiting-message {
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 11px;
+      border: 1px solid #ffeeba;
+    }
+    
+    /* قسم السجل */
+    .timeline-section {
+      flex: 1;
+      background: white;
+      margin: 0 8px 8px 8px;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    
+    .timeline-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+    
+    .timeline-inner {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .event-card {
+      background: white;
+      padding: 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      border-right: 2px solid #28a745;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      animation: slideIn 0.3s ease;
+    }
+    
+    .event-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    
+    .event-time {
+      color: #6c757d;
+      font-size: 9px;
+    }
+    
+    .event-player {
+      background: #28a745;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: bold;
+    }
+    
+    .event-player-me {
+      background: #007bff;
+    }
+    
+    .event-choice {
+      background: #e3f2fd;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin: 4px 0;
+      font-size: 10px;
+      color: #1976d2;
+      font-style: italic;
+    }
+    
+    .event-description {
+      font-size: 11px;
+      color: #333;
+      line-height: 1.4;
+    }
+    
+    /* الشريط السفلي */
+    .footer-bar {
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      padding: 8px;
+      display: flex;
+      justify-content: space-around;
+      flex-shrink: 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .footer-item {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .footer-icon {
+      font-size: 16px;
+    }
+    
+    .footer-label {
+      font-size: 9px;
+      color: #6c757d;
+      margin: 2px 0;
+    }
+    
+    .footer-value {
+      font-size: 11px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .connected {
+      color: #28a745;
+    }
+    
+    .disconnected {
+      color: #dc3545;
+    }
+    
+    /* رسالة انتهاء الجلسة */
+    .expired-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .expired-modal {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    
+    .expired-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    
+    .expired-text {
+      color: #dc3545;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    /* الحركات */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* شريط التمرير المخصص */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+    }
+    
+    /* دعم الشاشات الصغيرة جداً */
+    @media (max-height: 600px) {
+      .story-section {
+        max-height: 25vh;
+      }
+      
+      .choices-section {
+        max-height: 20vh;
+      }
+      
+      .section-header {
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      
+      .choice-button {
+        padding: 10px 8px;
+        font-size: 11px;
+      }
+    }
+    
+    /* دعم الشاشات الكبيرة */
+    @media (min-width: 768px) {
+      .app-container {
+        max-width: 500px;
+        margin: 0 auto;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      }
+    }
+    
+    /* تحسين للآيفون */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .footer-bar {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- الهيدر -->
+    <div class="header-section">
+      <div class="game-title">🎮 لوحة اللاعب</div>
+      <div class="info-bar">
+        <div class="info-item">
+          <div class="info-icon">🔤</div>
+          <div class="info-text">الكود</div>
+          <div class="info-value" id="code">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">👤</div>
+          <div class="info-text">اللاعب</div>
+          <div class="info-value" id="playerNum">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🎯</div>
+          <div class="info-text">الدور</div>
+          <div class="info-value" id="currentTurn">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🌐</div>
+          <div class="info-text">الاتصال</div>
+          <div class="info-value" id="connected">⭕</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- المحتوى -->
+    <div class="content-area">
+      <!-- القصة -->
+      <div class="story-section">
+        <div class="section-header">
+          <span>📖 القصة الحالية</span>
+          <span id="turnIndicator"></span>
+        </div>
+        <div class="story-content" id="story">جارِ التحميل...</div>
+      </div>
+
+      <!-- الاختيارات -->
+      <div class="choices-section">
+        <div class="section-header">🎮 الخيارات المتاحة</div>
+        <div class="choices-scroll" id="choices">
+          <div class="waiting-message">⏳ جارِ تحميل الخيارات...</div>
+        </div>
+      </div>
+
+      <!-- السجل -->
+      <div class="timeline-section">
+        <div class="section-header">📜 سجل الأحداث</div>
+        <div class="timeline-scroll" id="timeline">
+          <div class="timeline-inner" id="timelineInner">
+            <div style="text-align: center; color: #999; font-size: 11px;">لا توجد أحداث بعد</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- الشريط السفلي -->
+    <div class="footer-bar">
+      <div class="footer-item">
+        <div class="footer-icon">⏱️</div>
+        <div class="footer-label">الوقت المتبقي</div>
+        <div class="footer-value" id="timeLeft">00:00:00</div>
+      </div>
+      <div class="footer-item">
+        <div class="footer-icon">👥</div>
+        <div class="footer-label">اللاعبون</div>
+        <div class="footer-value">
+          <span id="joinedCount">0</span>/<span id="maxPlayers">4</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="expiredContainer"></div>
+
+  <script>
+    // تعيين ارتفاع الشاشة الحقيقي
+    function setViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+
+    // منع التمرير والزوم
+    document.addEventListener('touchmove', function(e) {
+      if (!e.target.closest('.story-content') && 
+          !e.target.closest('.choices-scroll') && 
+          !e.target.closest('.timeline-scroll')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    });
+
+    // استخراج المعاملات من URL
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const token = params.get("token");
+    const player = parseInt(params.get("player") || "0");
+    let player_token = params.get("player_token");
+
+    // عرض معلومات اللاعب
+    document.getElementById("code").textContent = code || "—";
+    document.getElementById("playerNum").textContent = player || "—";
+
+    // إدارة player_token في localStorage
+    const localKey = (c) => `game_${c}_player_token`;
+    if (player_token) {
+      localStorage.setItem(localKey(code), player_token);
+    } else {
+      const stored = localStorage.getItem(localKey(code));
+      if (stored) {
+        location.href = `/join/${code}?token=${token}&player_token=${stored}`;
+      }
+    }
+    player_token = player_token || localStorage.getItem(localKey(code));
+
+    // Socket.IO
+    const socket = io();
+    
+    socket.on("connect", () => {
+      document.getElementById("connected").textContent = "✅";
+      document.getElementById("connected").className = "info-value connected";
+      
+      socket.emit("join_session_room", { code });
+      
+      if (player_token) {
+        const heartbeat = () => socket.emit("heartbeat", { code, player_token });
+        heartbeat();
+        setInterval(heartbeat, 20000);
+      }
+      
+      refreshAll();
+    });
+
+    socket.on("disconnect", () => {
+      document.getElementById("connected").textContent = "❌";
+      document.getElementById("connected").className = "info-value disconnected";
+    });
+
+    // تسجيل الخروج عند إغلاق الصفحة
+    window.addEventListener("beforeunload", () => {
+      if (player_token) {
+        socket.emit("goodbye", { code, player_token });
+      }
+    });
+
+    // استقبال التحديثات
+    socket.on("session_update", (data) => {
+      document.getElementById("joinedCount").textContent = data.joined ?? 0;
+      document.getElementById("maxPlayers").textContent = data.maxPlayers ?? 4;
+      document.getElementById("timeLeft").textContent = secondsToHMS(data.time_left || 0);
+      
+      const expiredContainer = document.getElementById("expiredContainer");
+      if (data.expired) {
+        expiredContainer.innerHTML = `
+          <div class="expired-overlay">
+            <div class="expired-modal">
+              <div class="expired-icon">⚠️</div>
+              <div class="expired-text">انتهت صلاحية الجلسة!</div>
+            </div>
+          </div>
+        `;
+      } else {
+        expiredContainer.innerHTML = '';
+      }
+    });
+
+    socket.on("story_changed", () => {
+      loadStory();
+    });
+
+
+    // استقبال حدث جديد مباشرة
+    socket.on("event_appended", (event) => {
+      appendEventToTimeline(event);
+    });
+
+    socket.on("error_msg", (data) => {
+      alert("❌ " + data.message);
+    });
+
+    // تحميل كل شيء
+    function refreshAll() {
+      loadStory();
+      loadEvents();
+    }
+
+    // تحميل القصة الحالية
+    async function loadStory() {
+      try {
+        const res = await fetch(`/story/${code}`);
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById("story").innerHTML = `<div style="color: #dc3545;">❌ ${data.error}</div>`;
+          document.getElementById("choices").innerHTML = '<div class="waiting-message">⚠️ لا توجد قصة</div>';
+          document.getElementById("currentTurn").textContent = "—";
+          document.getElementById("turnIndicator").innerHTML = '';
+          return;
+        }
+
+        document.getElementById("story").textContent = data.description || "(لا يوجد وصف)";
+        document.getElementById("currentTurn").textContent = data.current_player ?? "—";
+
+        const isMyTurn = parseInt(data.current_player) === parseInt(player);
+        const turnIndicator = document.getElementById("turnIndicator");
+        
+        if (isMyTurn) {
+          turnIndicator.innerHTML = '<span class="turn-badge">دورك! 🎯</span>';
+        } else {
+          turnIndicator.innerHTML = `<span class="turn-badge waiting-turn">دور ${data.current_player} ⏳</span>`;
+        }
+
+        const choicesDiv = document.getElementById("choices");
+        choicesDiv.innerHTML = "";
+
+        if (!data.choices || data.choices.length === 0) {
+          choicesDiv.innerHTML = '<div class="waiting-message">⚠️ لا توجد خيارات</div>';
+          return;
+        }
+
+        if (isMyTurn) {
+          data.choices.forEach(choice => {
+            const btn = document.createElement("button");
+            btn.className = "choice-button";
+            btn.textContent = choice.text;
+            btn.onclick = () => {
+              socket.emit("choose_option", {
+                code,
+                token,
+                player,
+                player_token,
+                choice_id: choice.id
+              });
+              btn.disabled = true;
+              btn.textContent = "⏳ " + choice.text;
+            };
+            choicesDiv.appendChild(btn);
+          });
+        } else {
+          choicesDiv.innerHTML = `
+            <div class="waiting-message">
+              ⏳ بانتظار اللاعب ${data.current_player} لاتخاذ القرار...
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error("Error loading story:", err);
+        document.getElementById("story").innerHTML = '<div style="color: #dc3545;">❌ خطأ في التحميل</div>';
+      }
+    }
+
+    // تحميل سجل الأحداث
+    async function loadEvents() {
+      try {
+        const res = await fetch(`/events/${code}?limit=50`);
+        const events = await res.json();
+        
+        const timelineInner = document.getElementById("timelineInner");
+        timelineInner.innerHTML = "";
+        
+        if (!events || events.length === 0) {
+          timelineInner.innerHTML = '<div style="text-align: center; color: #999; font-size: 11px;">لا توجد أحداث بعد</div>';
+          return;
+        }
+        
+        // عرض الأحداث من الأقدم للأحدث
+        events.reverse().forEach(event => {
+          addEventToDOM(event, timelineInner);
+        });
+        
+        // التمرير تلقائياً لأحدث حدث
+        const timeline = document.getElementById("timeline");
+        setTimeout(() => {
+          timeline.scrollTop = 0;
+        }, 100);
+        
+      } catch (err) {
+        console.error("Error loading events:", err);
+        document.getElementById("timelineInner").innerHTML = '<div style="text-align: center; color: #dc3545;">❌ خطأ</div>';
+      }
+    }
+
+    // إضافة حدث للسجل
+    function appendEventToTimeline(event) {
+      if (!event) return;
+      
+      const timelineInner = document.getElementById("timelineInner");
+      
+      // إزالة رسالة "لا توجد أحداث" إن وجدت
+      if (timelineInner.children.length === 1 && timelineInner.children[0].textContent.includes("لا توجد أحداث")) {
+        timelineInner.innerHTML = "";
+      }
+      
+      addEventToDOM(event, timelineInner);
+      
+      // التمرير لأحدث حدث
+      const timeline = document.getElementById("timeline");
+      setTimeout(() => {
+        timeline.scrollTop = 0;
+      }, 100);
+    }
+
+    // إضافة حدث لـ DOM
+    function addEventToDOM(event, container) {
+      const eventDiv = document.createElement("div");
+      eventDiv.className = "event-card";
+      
+      let html = '<div class="event-header">';
+      
+      // الوقت
+      if (event.at) {
+        const time = new Date(event.at).toLocaleTimeString('ar-SA', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        html += `<span class="event-time">⏰ ${time}</span>`;
+      }
+      
+      // اللاعب
+      if (event.player) {
+        const isMe = event.player === player;
+        const playerLabel = isMe ? "أنت" : `اللاعب ${event.player}`;
+        const playerClass = isMe ? "event-player event-player-me" : "event-player";
+        html += `<span class="${playerClass}">${playerLabel}</span>`;
+      }
+      
+      html += '</div>';
+      
+      // الخيار
+      if (event.choice_text) {
+        html += `<div class="event-choice">💭 ${event.choice_text}</div>`;
+      }
+      
+      // وصف الحدث
+      if (event.event_text) {
+        html += `<div class="event-description">${event.event_text}</div>`;
+      }
+      
+      eventDiv.innerHTML = html;
+      container.appendChild(eventDiv);
+    }
+
+    // تحويل الثواني
+    function secondsToHMS(seconds) {
+      if (!seconds || seconds <= 0) return "00:00:00";
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // تحميل أولي
+    window.addEventListener("load", () => {
+      refreshAll();
+    });
+  </script>
+</body>
+</html>

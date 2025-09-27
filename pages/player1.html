@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>👑 صفحة المضيف</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: #f0f0f0;
+      position: fixed;
+      touch-action: none;
+    }
+    
+    .app-container {
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    
+    /* الهيدر */
+    .header-section {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: white;
+      padding: 10px 8px 8px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    
+    .header-title {
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+    
+    .status-item {
+      background: rgba(255,255,255,0.2);
+      padding: 5px;
+      border-radius: 6px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    
+    .status-icon {
+      font-size: 14px;
+    }
+    
+    .status-label {
+      font-size: 9px;
+      opacity: 0.9;
+    }
+    
+    .status-value {
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    
+    /* التبويبات */
+    .tabs-section {
+      background: white;
+      display: flex;
+      border-bottom: 1px solid #e0e0e0;
+      flex-shrink: 0;
+    }
+    
+    .tab-button {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      font-size: 12px;
+      color: #666;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .tab-button.active {
+      color: #FFA500;
+      font-weight: bold;
+    }
+    
+    .tab-button.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: #FFA500;
+    }
+    
+    /* المحتوى */
+    .content-area {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .tab-content {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    /* البطاقات */
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .card-header {
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    /* الأزرار */
+    .btn {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      touch-action: manipulation;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    
+    .btn:active {
+      transform: scale(0.97);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-small {
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    
+    /* الروابط */
+    .link-container {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .link-label {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .link-input-group {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .link-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 11px;
+      background: white;
+      color: #333;
+    }
+    
+    .seat-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    
+    /* القصة */
+    .story-content {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      border-right: 3px solid #FFA500;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #333;
+      min-height: 60px;
+      max-height: 25vh;
+      overflow-y: auto;
+    }
+    
+    .turn-indicator {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+    
+    .turn-indicator.my-turn {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      animation: pulse 2s infinite;
+    }
+    
+    .turn-indicator.waiting {
+      background: #6c757d;
+      color: white;
+    }
+    
+    /* الخيارات */
+    .choices-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 20vh;
+      overflow-y: auto;
+      padding-left: 2px;
+    }
+    
+    .choice-btn {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      cursor: pointer;
+      text-align: right;
+    }
+    
+    .choice-btn:active {
+      transform: scale(0.97);
+    }
+    
+    .waiting-msg {
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 11px;
+      border: 1px solid #ffeeba;
+    }
+    
+    /* السجل */
+    .timeline-container {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .timeline-scroll {
+      flex: 1;
+      overflow-y: auto;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+    
+    .timeline-inner {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .event-item {
+      background: white;
+      padding: 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      border-right: 2px solid #28a745;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      animation: slideIn 0.3s;
+    }
+    
+    .event-time {
+      color: #6c757d;
+      font-size: 9px;
+      margin-bottom: 4px;
+    }
+    
+    .event-player {
+      background: #28a745;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    
+    .event-choice {
+      background: #e3f2fd;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin: 4px 0;
+      font-size: 10px;
+      color: #1976d2;
+      font-style: italic;
+    }
+    
+    .event-text {
+      font-size: 11px;
+      color: #333;
+      line-height: 1.4;
+    }
+    
+    /* إدارة اللاعبين */
+    .manage-section {
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    
+    .kick-input {
+      width: 80px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    /* رسالة انتهاء الجلسة */
+    .expired-banner {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      border: 1px solid #f5c6cb;
+    }
+    
+    /* الحركات */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* QR Code قسم */
+    .qr-section {
+      margin-bottom: 15px;
+    }
+    
+    .qr-display {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      animation: fadeIn 0.3s;
+    }
+    
+    #qrCanvas {
+      margin: 0 auto;
+      display: block;
+      max-width: 200px;
+      width: 100%;
+      height: auto;
+    }
+    
+    .qr-info {
+      margin-top: 10px;
+    }
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+    }
+    
+    /* التوافق مع الأجهزة */
+    @media (max-height: 600px) {
+      .story-content {
+        max-height: 20vh;
+      }
+      
+      .choices-container {
+        max-height: 15vh;
+      }
+    }
+    
+    @media (min-width: 768px) {
+      .app-container {
+        max-width: 500px;
+        margin: 0 auto;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      }
+    }
+    
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .tabs-section {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- الهيدر -->
+    <div class="header-section">
+      <div class="header-title">👑 لوحة المضيف</div>
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-icon">🔤</div>
+          <div class="status-label">الكود</div>
+          <div class="status-value" id="code">—</div>
+        </div>
+        <div class="status-item">
+          <div class="status-icon">👥</div>
+          <div class="status-label">اللاعبون</div>
+          <div class="status-value">
+            <span id="joinedCount">0</span>/<span id="maxPlayers">4</span>
+          </div>
+        </div>
+        <div class="status-item">
+          <div class="status-icon">🌐</div>
+          <div class="status-label">الاتصال</div>
+          <div class="status-value" id="connected">⭕</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- التبويبات -->
+    <div class="tabs-section">
+      <button class="tab-button active" onclick="showTab('game')">🎮 اللعبة</button>
+      <button class="tab-button" onclick="showTab('links')">🔗 الروابط</button>
+      <button class="tab-button" onclick="showTab('manage')">⚙️ الإدارة</button>
+      <button class="tab-button" onclick="showTab('events')">📜 السجل</button>
+    </div>
+
+    <!-- المحتوى -->
+    <div class="content-area">
+      <!-- تبويب اللعبة -->
+      <div id="game-tab" class="tab-content active">
+        <div id="expiredContainer"></div>
+        
+        <div class="card">
+          <div class="card-header">
+            <span>📊 معلومات الجلسة</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+            <div>⏱️ الوقت: <b id="timeLeft">00:00:00</b></div>
+            <div>🎯 الدور: لاعب <b id="currentTurn">؟</b></div>
+          </div>
+          <button class="btn btn-success" style="width: 100%; margin-top: 8px;" onclick="startGame()">
+            🚀 بدء/تحديث القصة
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">📖 القصة الحالية</div>
+          <div class="story-content" id="story">جارِ التحميل...</div>
+          <div id="turnHint"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">🎮 الخيارات المتاحة</div>
+          <div class="choices-container" id="choices">
+            <div class="waiting-msg">⏳ جارِ التحميل...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- تبويب الروابط -->
+      <div id="links-tab" class="tab-content">
+        <div class="card">
+          <div class="card-header">🔗 روابط الدعوة</div>
+          
+          <!-- QR Code للمسح المباشر -->
+          <div class="qr-section">
+            <button class="btn btn-warning" style="width: 100%; margin-bottom: 10px;" onclick="toggleQR()">
+              📱 عرض QR Code للاعبين
+            </button>
+            <div id="qrContainer" style="display: none;">
+              <div class="qr-display">
+                <div id="qrcode" style="display: flex; justify-content: center; padding: 10px;"></div>
+                <div class="qr-info">
+                  <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                    اطلب من اللاعبين مسح الكود للدخول
+                  </div>
+                  <div style="font-size: 14px; font-weight: bold; color: #333; margin-top: 5px;">
+                    كود الجلسة: <span id="sessionCode"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="link-container">
+            <div class="link-label">الرابط العام:</div>
+            <div class="link-input-group">
+              <input id="baseUrl" type="text" class="link-input" readonly>
+              <button class="btn btn-primary btn-small" onclick="copyBase()">📋</button>
+              <button class="btn btn-success btn-small" onclick="openBase()">🚀</button>
+            </div>
+          </div>
+
+          <div class="link-label">مقاعد اللاعبين:</div>
+          <div class="seat-buttons" id="seatLinks">
+            <div style="text-align: center; color: #999; font-size: 11px; grid-column: 1/-1;">
+              جارِ التحميل...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- تبويب الإدارة -->
+      <div id="manage-tab" class="tab-content">
+        <div class="card">
+          <div class="card-header">⚙️ إدارة اللاعبين</div>
+          
+          <div class="manage-section">
+            <div style="font-size: 12px; margin-bottom: 10px;">
+              ⚠️ <b>تحذير:</b> هذه العمليات لا يمكن التراجع عنها
+            </div>
+            
+            <button class="btn btn-warning" style="width: 100%;" onclick="resetSession()">
+              🔄 إعادة تعيين الجلسة بالكامل
+            </button>
+            
+            <div style="margin-top: 10px;">
+              <div class="link-label">نقل لاعب لجهاز آخر:</div>
+              <div style="display: flex; gap: 6px;">
+                <input id="kickNum" type="number" min="2" max="4" 
+                       placeholder="رقم (2-4)" class="kick-input">
+                <button class="btn btn-primary" style="flex: 1;" onclick="kickPlayer()">
+                  📱 نقل اللاعب
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- تبويب السجل -->
+      <div id="events-tab" class="tab-content">
+        <div class="card timeline-container">
+          <div class="card-header">📜 سجل الأحداث</div>
+          <div class="timeline-scroll" id="timeline">
+            <div class="timeline-inner" id="timelineInner">
+              <div style="text-align: center; color: #999; font-size: 11px;">
+                لا توجد أحداث بعد
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // تعيين ارتفاع الشاشة
+    function setViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+
+    // منع التمرير والزوم
+    document.addEventListener('touchmove', function(e) {
+      if (!e.target.closest('.tab-content')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    });
+
+    // إدارة التبويبات
+    function showTab(tabName) {
+      // إخفاء كل التبويبات
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // إزالة active من كل الأزرار
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // إظهار التبويب المختار
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+      
+      // تفعيل الزر المختار
+      event.target.classList.add('active');
+    }
+
+    // استخراج المعاملات من URL
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const token = params.get("token");
+    const player = 1;
+    let player_token = params.get("player_token");
+
+    // عرض الكود
+    document.getElementById("code").textContent = code || "—";
+
+    // إدارة player_token في localStorage
+    const localKey = (c) => `game_${c}_player_token`;
+    if (player_token) {
+      localStorage.setItem(localKey(code), player_token);
+    } else {
+      const stored = localStorage.getItem(localKey(code));
+      if (stored) {
+        location.href = `/join/${code}?token=${token}&player_token=${stored}`;
+      }
+    }
+    player_token = player_token || localStorage.getItem(localKey(code));
+
+    // Socket.IO
+    const socket = io();
+    
+    socket.on("connect", () => {
+      document.getElementById("connected").textContent = "✅";
+      document.getElementById("connected").style.color = "#28a745";
+      
+      socket.emit("join_session_room", { code });
+      
+      if (player_token) {
+        const heartbeat = () => socket.emit("heartbeat", { code, player_token });
+        heartbeat();
+        setInterval(heartbeat, 20000);
+      }
+      
+      refreshAll();
+    });
+
+    socket.on("disconnect", () => {
+      document.getElementById("connected").textContent = "❌";
+      document.getElementById("connected").style.color = "#dc3545";
+    });
+
+    // تسجيل الخروج عند إغلاق الصفحة
+    window.addEventListener("beforeunload", () => {
+      if (player_token) {
+        socket.emit("goodbye", { code, player_token });
+      }
+    });
+
+    // استقبال التحديثات
+    socket.on("session_update", (data) => {
+      document.getElementById("joinedCount").textContent = data.joined ?? 0;
+      document.getElementById("maxPlayers").textContent = data.maxPlayers ?? 4;
+      document.getElementById("timeLeft").textContent = secondsToHMS(data.time_left || 0);
+      
+      const expiredContainer = document.getElementById("expiredContainer");
+      if (data.expired) {
+        expiredContainer.innerHTML = '<div class="expired-banner">⚠️ انتهت صلاحية الجلسة!</div>';
+      } else {
+        expiredContainer.innerHTML = '';
+      }
+      
+      loadLinks();
+    });
+
+    socket.on("story_changed", () => {
+      loadStory();
+    });
+
+    // استقبال حدث جديد مباشرة
+    socket.on("event_appended", (event) => {
+      appendEventToTimeline(event);
+    });
+
+    socket.on("error_msg", (data) => {
+      alert("❌ " + data.message);
+    });
+
+    // تحميل كل شيء
+    function refreshAll() {
+      loadLinks();
+      loadStory();
+      loadEvents();
+    }
+
+    // تحميل القصة الحالية
+    async function loadStory() {
+      try {
+        const res = await fetch(`/story/${code}`);
+        const data = await res.json();
+        
+        if (data.error) {
+          document.getElementById("story").innerHTML = `<div style="color: #dc3545;">❌ ${data.error}</div>`;
+          document.getElementById("choices").innerHTML = '<div class="waiting-msg">⚠️ لا توجد قصة</div>';
+          document.getElementById("currentTurn").textContent = "؟";
+          document.getElementById("turnHint").innerHTML = "";
+          return;
+        }
+        
+        document.getElementById("story").textContent = data.description || "(لا يوجد وصف)";
+        document.getElementById("currentTurn").textContent = data.current_player ?? "؟";
+        
+        const isMyTurn = (parseInt(data.current_player) === 1);
+        const turnHint = document.getElementById("turnHint");
+        
+        if (isMyTurn) {
+          turnHint.innerHTML = '<div class="turn-indicator my-turn">🎯 دورك الآن!</div>';
+        } else {
+          turnHint.innerHTML = `<div class="turn-indicator waiting">⏳ دور اللاعب ${data.current_player}</div>`;
+        }
+
+        const choicesDiv = document.getElementById("choices");
+        choicesDiv.innerHTML = "";
+        
+        if (!data.choices || data.choices.length === 0) {
+          choicesDiv.innerHTML = '<div class="waiting-msg">⚠️ لا توجد خيارات</div>';
+          return;
+        }
+        
+        if (isMyTurn) {
+          data.choices.forEach(choice => {
+            const btn = document.createElement("button");
+            btn.className = "choice-btn";
+            btn.textContent = choice.text;
+            btn.onclick = () => {
+              socket.emit("choose_option", {
+                code,
+                token,
+                player,
+                player_token,
+                choice_id: choice.id
+              });
+              btn.disabled = true;
+              btn.textContent = "⏳ " + choice.text;
+            };
+            choicesDiv.appendChild(btn);
+          });
+        } else {
+          choicesDiv.innerHTML = `
+            <div class="waiting-msg">
+              ⏳ بانتظار اللاعب ${data.current_player} لاتخاذ القرار...
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error("Error loading story:", err);
+        document.getElementById("story").innerHTML = '<div style="color: #dc3545;">❌ خطأ في التحميل</div>';
+      }
+    }
+
+    // تحميل سجل الأحداث
+    async function loadEvents() {
+      try {
+        const res = await fetch(`/events/${code}?limit=50`);
+        const events = await res.json();
+        
+        const timelineInner = document.getElementById("timelineInner");
+        timelineInner.innerHTML = "";
+        
+        if (!events || events.length === 0) {
+          timelineInner.innerHTML = '<div style="text-align: center; color: #999; font-size: 11px;">لا توجد أحداث بعد</div>';
+          return;
+        }
+        
+        // عرض من الأقدم للأحدث
+        events.reverse().forEach(event => {
+          addEventToDOM(event);
+        });
+        
+        // التمرير لأحدث حدث
+        const timeline = document.getElementById("timeline");
+        setTimeout(() => {
+          timeline.scrollTop = 0;
+        }, 100);
+        
+      } catch (err) {
+        console.error("Error loading events:", err);
+      }
+    }
+
+    // إضافة حدث للسجل
+    function appendEventToTimeline(event) {
+      if (!event) return;
+      
+      const timelineInner = document.getElementById("timelineInner");
+      
+      // إزالة رسالة "لا توجد أحداث"
+      if (timelineInner.children.length === 1 && 
+          timelineInner.children[0].textContent.includes("لا توجد أحداث")) {
+        timelineInner.innerHTML = "";
+      }
+      
+      addEventToDOM(event);
+      
+      // التمرير لأحدث حدث
+      const timeline = document.getElementById("timeline");
+      setTimeout(() => {
+        timeline.scrollTop = 0;
+      }, 100);
+    }
+
+    // إضافة حدث لـ DOM
+    function addEventToDOM(event) {
+      const timelineInner = document.getElementById("timelineInner");
+      const eventDiv = document.createElement("div");
+      eventDiv.className = "event-item";
+      
+      const time = event.at ? new Date(event.at).toLocaleTimeString('ar-SA', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : "";
+      
+      let html = '';
+      
+      if (time) {
+        html += `<div class="event-time">⏰ ${time}</div>`;
+      }
+      
+      if (event.player) {
+        const playerColor = event.player === 1 ? "#FFD700" : "#28a745";
+        html += `<div>
+          <span class="event-player" style="background: ${playerColor};">
+            ${event.player === 1 ? "المضيف" : `اللاعب ${event.player}`}
+          </span>
+        </div>`;
+      }
+      
+      if (event.choice_text) {
+        html += `<div class="event-choice">💭 ${event.choice_text}</div>`;
+      }
+      
+      if (event.event_text) {
+        html += `<div class="event-text">${event.event_text}</div>`;
+      }
+      
+      eventDiv.innerHTML = html;
+      timelineInner.appendChild(eventDiv);
+    }
+
+    // تحويل الثواني
+    function secondsToHMS(seconds) {
+      if (!seconds || seconds <= 0) return "00:00:00";
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // تحميل روابط الدعوة
+    async function loadLinks() {
+      try {
+        const res = await fetch(`/session_links/${code}?token=${token}`);
+        const data = await res.json();
+        
+        if (data.error) {
+          console.warn("Error loading links:", data.error);
+          return;
+        }
+        
+        document.getElementById("baseUrl").value = data.base_url || "";
+        
+        const seatDiv = document.getElementById("seatLinks");
+        seatDiv.innerHTML = "";
+        
+        if (!data.seat_urls || data.seat_urls.length === 0) {
+          seatDiv.innerHTML = `
+            <div style="text-align: center; color: #999; font-size: 11px; grid-column: 1/-1;">
+              جميع المقاعد محجوزة أو الجلسة ممتلئة
+            </div>
+          `;
+        } else {
+          data.seat_urls.forEach(seat => {
+            const btn = document.createElement("button");
+            btn.className = "btn btn-primary btn-small";
+            btn.style.width = "100%";
+            btn.textContent = `📋 مقعد ${seat.number}`;
+            btn.onclick = () => {
+              navigator.clipboard.writeText(seat.url);
+              alert(`✅ تم نسخ رابط المقعد ${seat.number}`);
+            };
+            seatDiv.appendChild(btn);
+          });
+        }
+      } catch (err) {
+        console.error("Error loading links:", err);
+      }
+    }
+
+    // عرض/إخفاء QR Code
+    let qrVisible = false;
+    let qrCodeInstance = null;
+    
+    function toggleQR() {
+      const container = document.getElementById("qrContainer");
+      const btn = event.target;
+      
+      if (!qrVisible) {
+        container.style.display = "block";
+        btn.textContent = "🔒 إخفاء QR Code";
+        btn.className = "btn btn-danger";
+        generateQRCode();
+      } else {
+        container.style.display = "none";
+        btn.textContent = "📱 عرض QR Code للاعبين";
+        btn.className = "btn btn-warning";
+      }
+      btn.style.width = "100%";
+      btn.style.marginBottom = "10px";
+      qrVisible = !qrVisible;
+    }
+    
+    // توليد QR Code
+    function generateQRCode() {
+      const url = document.getElementById("baseUrl").value;
+      const qrDiv = document.getElementById("qrcode");
+      document.getElementById("sessionCode").textContent = code;
+      
+      // مسح QR القديم إن وجد
+      qrDiv.innerHTML = "";
+      
+      if (url) {
+        // إنشاء QR Code جديد
+        try {
+          qrCodeInstance = new QRCode(qrDiv, {
+            text: url,
+            width: 180,
+            height: 180,
+            colorDark: "#333333",
+            colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        } catch(e) {
+          // في حالة فشل المكتبة، نعرض رسالة بديلة
+          qrDiv.innerHTML = `
+            <div style="padding: 20px; background: #f0f0f0; border-radius: 8px;">
+              <div style="font-size: 48px; margin-bottom: 10px;">📱</div>
+              <div style="font-size: 12px; color: #666;">
+                انسخ الرابط التالي:<br>
+                <code style="font-size: 10px; word-break: break-all;">${url}</code>
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // نسخ الرابط العام
+    function copyBase() {
+      const url = document.getElementById("baseUrl").value;
+      navigator.clipboard.writeText(url);
+      alert("✅ تم نسخ الرابط العام");
+    }
+
+    // فتح الرابط العام
+    function openBase() {
+      const url = document.getElementById("baseUrl").value;
+      if (url) {
+        window.open(url, "_blank");
+      }
+    }
+
+    // تنظيف الجلسة بالكامل - إعادة تعيين كاملة
+    async function resetSession() {
+      const confirmMsg = `⚠️ تحذير هام!
+      
+سيتم إعادة تعيين الجلسة بالكامل:
+• حذف جميع اللاعبين
+• مسح القصة الحالية  
+• حذف سجل الأحداث بالكامل
+• إعادة تعيين كل الإعدادات
+• مسح كل البيانات من قواعد البيانات
+
+هل أنت متأكد من المتابعة؟`;
+      
+      if (!confirm(confirmMsg)) return;
+      
+      // تأكيد ثاني للأمان
+      if (!confirm("⚠️ تأكيد نهائي: سيتم حذف كل شيء نهائياً! هل تريد المتابعة؟")) return;
+      
+      try {
+        // طلب إعادة التعيين الكامل
+        const res = await fetch(`/full_reset/${code}?token=${token}`, { 
+          method: "POST",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            reset_players: true,
+            reset_story: true,
+            reset_events: true,
+            clear_database: true,
+            reset_all: true
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert("✅ تم إعادة تعيين الجلسة بالكامل بنجاح!");
+          
+          // مسح البيانات المحلية أيضاً
+          localStorage.removeItem(localKey(code));
+          
+          // مسح سجل الأحداث من الواجهة
+          document.getElementById("timelineInner").innerHTML = 
+            '<div style="text-align: center; color: #999; font-size: 11px;">لا توجد أحداث بعد</div>';
+          
+          // إعادة تحميل الصفحة لضمان تحديث كامل
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        } else {
+          alert(data.error || "❌ فشل في إعادة تعيين الجلسة");
+        }
+      } catch (err) {
+        console.error("Error resetting session:", err);
+        // محاولة بديلة مع المسار القديم
+        try {
+          const res = await fetch(`/reset_session/${code}?token=${token}`, { method: "POST" });
+          const data = await res.json();
+          alert("✅ " + (data.message || "تم إعادة التعيين"));
+          location.reload();
+        } catch (fallbackErr) {
+          alert("❌ خطأ في إعادة تعيين الجلسة");
+        }
+      }
+    }
+
+    // نقل لاعب لجهاز آخر
+    async function kickPlayer() {
+      const num = parseInt(document.getElementById("kickNum").value || "0");
+      
+      if (isNaN(num) || num < 2 || num > 4) {
+        alert("⚠️ الرجاء إدخال رقم لاعب صحيح (2-4)");
+        return;
+      }
+      
+      const confirmMsg = `📱 نقل اللاعب ${num} لجهاز آخر
+      
+سيتم تسجيل خروج اللاعب من الجهاز الحالي
+ليتمكن من الدخول من جهاز جديد
+
+هل تريد المتابعة؟`;
+      
+      if (!confirm(confirmMsg)) return;
+      
+      try {
+        const res = await fetch(`/transfer_player/${code}?token=${token}`, {
+          method: "POST",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            pnum: num,
+            action: "transfer"
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`✅ تم تسجيل خروج اللاعب ${num}
+يمكنه الآن الدخول من جهاز آخر باستخدام نفس الرابط`);
+        } else {
+          // محاولة بديلة مع المسار القديم
+          const fallbackRes = await fetch(`/kick_player/${code}?token=${token}`, {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pnum: num })
+          });
+          const fallbackData = await fallbackRes.json();
+          alert(fallbackData.message || fallbackData.error || "تم");
+        }
+        
+        refreshAll();
+      } catch (err) {
+        alert("❌ خطأ في نقل اللاعب");
+      }
+    }
+
+    // بدء/تحديث اللعبة
+    async function startGame() {
+      try {
+        const res = await fetch(`/start_game/${code}?token=${token}`, { method: "POST" });
+        const data = await res.json();
+        if (data.message) {
+          console.log(data.message);
+        }
+      } catch (err) {
+        console.error("Error starting game:", err);
+      }
+    }
+
+    // تحميل أولي
+    window.addEventListener("load", () => {
+      refreshAll();
+    });
+  </script>
+</body>
+</html>

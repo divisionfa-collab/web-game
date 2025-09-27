@@ -1,0 +1,7 @@
+flask
+flask-socketio
+sqlalchemy
+pyodbc
+qrcode
+eventlet
+python-dotenv

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+env/
+venv/
+
+# Databases
+*.db
+*.db-journal
+*.mdf
+*.ldf
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# VSCode
+.vscode/
